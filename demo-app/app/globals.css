@@ -3,6 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
+@import 'react-chat-widget/dist/ChatWidget.css';
 
 :root {
   --foreground-rgb: 0, 0, 0;

@@ -1,10 +1,14 @@
 // components/ChatProvider.tsx
-import React from 'react';
+import React, { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 
 const ChatWidget = dynamic(() => import('react-chat-widget'), { ssr: false });
 
-const ChatProvider: React.FC = ({ children }) => {
+interface ChatProviderProps {
+  children: ReactNode;
+}
+
+const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   if (process.env.NODE_ENV !== 'development') {
     return <>{children}</>;
   }
