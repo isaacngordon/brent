@@ -1,0 +1,11 @@
+{
+  "name": "react-widget-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "workspaces": [
+    "react-chat-widget",
+    "demo-app"
+  ]
+}
