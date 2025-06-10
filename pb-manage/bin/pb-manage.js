@@ -119,13 +119,41 @@ services:
 
   ensureDir('.github/workflows');
   writeFileIfMissing('.github/workflows/pb-deploy.yml', `name: Deploy PocketBase
-on: [push]
+
+on:
+  push:
+    branches: [main]
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      REGISTRY: ghcr.io
+      IMAGE: \${{ env.REGISTRY }}/\${{ github.repository }}:latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "Deploy placeholder"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: \${{ env.REGISTRY }}
+          username: \${{ secrets.REGISTRY_USERNAME }}
+          password: \${{ secrets.REGISTRY_PASSWORD }}
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: \${{ env.IMAGE }}
+      - name: Deploy via pb-manage
+        env:
+          SSH_KEY: \${{ secrets.SSH_KEY }}
+        run: |
+          echo "$SSH_KEY" > key.pem
+          chmod 600 key.pem
+          node pb-manage/bin/pb-manage.js deploy production --ssh-key key.pem
+          rm key.pem
 `);
 
   writeFileIfMissing('README.md', `# PocketBase Project
