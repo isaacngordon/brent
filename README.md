@@ -16,8 +16,8 @@ Available commands:
 - `dev` – start the local Docker environment, run migrations and seeds, and stream logs
 - `migrate` – run migrations in the local container
 - `seed` – seed the local database
-- `create <env>` – create a remote environment (requires `pb.config.json`)
-- `destroy <env>` – remove a remote environment
+- `create <env>` – clone the base `pb_data`, start a remote container, apply migrations and seeds, and configure nginx at `<env>.<domain>`
+- `destroy <env>` – stop the container, remove its data and nginx config
 - `backup <env>` – zip the remote data directory
 - `restore <env> <file>` – restore a backup on the remote server
 - `deploy <env>` – create and apply migrations & seeds

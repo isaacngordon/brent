@@ -146,14 +146,39 @@ function seed() {
 
 function create(env = argv.env) {
   if (!env) return console.error('Missing environment name');
-  ssh(`mkdir -p ~/pb_data/${env}`);
-  ssh(`docker run -d --name pb-${env} -v ~/pb_data/${env}:/pb/pb_data -p 0:8090 pocketbase`);
+  const cfg = loadConfig();
+  // Clone or restore the base data directory if it exists
+  ssh(`if [ -d ~/pb_base/pb_data ]; then rm -rf ~/pb_data/${env} && cp -r ~/pb_base/pb_data ~/pb_data/${env}; else mkdir -p ~/pb_data/${env}; fi`);
+  // Ensure a Docker network for nginx routing
+  ssh('docker network inspect pb-net >/dev/null 2>&1 || docker network create pb-net');
+  // Start the PocketBase container on the network
+  ssh(`docker run -d --name pb-${env} --network pb-net -v ~/pb_data/${env}:/pb/pb_data pocketbase`);
+  // Apply migrations and seeds on the new container
+  ssh(`docker exec pb-${env} pocketbase migrate up`);
+  ssh(`docker exec pb-${env} pocketbase seed up`);
+  // Configure nginx to expose the instance
+  const domain = cfg.domain;
+  ssh(`cat <<'EOF' > /etc/nginx/conf.d/pb-${env}.conf
+server {
+    listen 80;
+    server_name ${env}.${domain};
+    location / {
+        proxy_pass http://pb-${env}:8090;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+EOF`);
+  ssh('nginx -s reload');
 }
 
 function destroy(env = argv.env) {
   if (!env) return console.error('Missing environment name');
   ssh(`docker rm -f pb-${env}`);
   ssh(`rm -rf ~/pb_data/${env}`);
+  ssh(`rm -f /etc/nginx/conf.d/pb-${env}.conf`);
+  ssh('nginx -s reload');
 }
 
 function backup(env = argv.env) {
