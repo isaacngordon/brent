@@ -6,6 +6,7 @@ const minimist = require('minimist');
 
 const argv = minimist(process.argv.slice(2), {
   string: ['config', 'ssh-key', 'env'],
+  boolean: ['local', 'remote'],
   alias: { c: 'config', k: 'ssh-key', e: 'env' }
 });
 
@@ -31,6 +32,20 @@ function ssh(cmd) {
   const keyPath = argv['ssh-key'] || cfg.sshKey;
   const key = keyPath ? `-i ${keyPath}` : '';
   run(`ssh ${key} ${cfg.sshUser}@${cfg.vpsHost} '${cmd}'`);
+}
+
+function scpFromRemote(remotePath, localPath) {
+  const cfg = loadConfig();
+  const keyPath = argv['ssh-key'] || cfg.sshKey;
+  const key = keyPath ? `-i ${keyPath}` : '';
+  run(`scp ${key} ${cfg.sshUser}@${cfg.vpsHost}:${remotePath} ${localPath}`);
+}
+
+function scpToRemote(localPath, remotePath) {
+  const cfg = loadConfig();
+  const keyPath = argv['ssh-key'] || cfg.sshKey;
+  const key = keyPath ? `-i ${keyPath}` : '';
+  run(`scp ${key} ${localPath} ${cfg.sshUser}@${cfg.vpsHost}:${remotePath}`);
 }
 
 function usage() {
@@ -183,12 +198,27 @@ function destroy(env = argv.env) {
 
 function backup(env = argv.env) {
   if (!env) return console.error('Missing environment name');
-  ssh(`zip -r /tmp/${env}-backup.zip ~/pb_data/${env}`);
+  const remoteZip = `/tmp/${env}-backup.zip`;
+  ssh(`zip -r ${remoteZip} ~/pb_data/${env}`);
+  if (argv.local) {
+    scpFromRemote(remoteZip, `./${env}-backup.zip`);
+    if (!argv.remote) ssh(`rm -f ${remoteZip}`);
+  } else {
+    console.log(`Backup stored on server at ${remoteZip}`);
+  }
 }
 
 function restore(env = argv.env, file) {
   if (!env || !file) return console.error('Usage: pb-manage restore <env> <file>');
-  ssh(`unzip -o ${file} -d ~/pb_data/${env}`);
+  if (!fs.existsSync(file)) return console.error(`File not found: ${file}`);
+
+  const remoteZip = `/tmp/${path.basename(file)}`;
+  scpToRemote(file, remoteZip);
+
+  ssh(`docker stop pb-${env} || true`);
+  ssh(`unzip -o ${remoteZip} -d ~/pb_data/${env}`);
+  ssh(`docker start pb-${env} || docker run -d --name pb-${env} --network pb-net -v ~/pb_data/${env}:/pb/pb_data pocketbase`);
+  ssh(`rm -f ${remoteZip}`);
 }
 
 function deploy(env = argv.env) {

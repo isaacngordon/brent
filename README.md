@@ -18,7 +18,9 @@ Available commands:
 - `seed` – seed the local database
 - `create <env>` – clone the base `pb_data`, start a remote container, apply migrations and seeds, and configure nginx at `<env>.<domain>`
 - `destroy <env>` – stop the container, remove its data and nginx config
-- `backup <env>` – zip the remote data directory
-- `restore <env> <file>` – restore a backup on the remote server
+- `backup <env>` – create a ZIP of the remote data directory. Use `--local` to
+  download it and `--remote` to keep a copy on the server.
+- `restore <env> <file>` – stop the remote container, restore the ZIP, and start
+  the container again
 - `deploy <env>` – create and apply migrations & seeds
 
