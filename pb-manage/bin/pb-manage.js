@@ -221,6 +221,31 @@ function restore(env = argv.env, file) {
   ssh(`rm -f ${remoteZip}`);
 }
 
+function pull(env = argv.env) {
+  if (!env) return console.error('Missing environment name');
+  ensureDockerRunning();
+
+  const remoteZip = `/tmp/${env}-backup.zip`;
+  const localZip = `./${env}-backup.zip`;
+
+  // Create backup on the remote host and download it
+  ssh(`zip -r ${remoteZip} ~/pb_data/${env}`);
+  scpFromRemote(remoteZip, localZip);
+  ssh(`rm -f ${remoteZip}`);
+
+  // Stop local container if running
+  try { run('docker-compose down'); } catch (err) {}
+
+  // Restore the backup into ./pb_data
+  run('rm -rf pb_data');
+  run(`unzip -o ${localZip}`);
+  run(`[ -d root/pb_data/${env} ] && mv root/pb_data/${env} pb_data && rm -rf root`);
+  run(`[ -d pb_data/${env} ] && mv pb_data/${env} pb_data`);
+
+  // Restart the local environment
+  run('docker-compose up -d --build');
+}
+
 function deploy(env = argv.env) {
   if (!env) return console.error('Missing environment name');
   create(env);
@@ -238,5 +263,6 @@ else if (cmd === 'create') create(argv._[1]);
 else if (cmd === 'destroy') destroy(argv._[1]);
 else if (cmd === 'backup') backup(argv._[1]);
 else if (cmd === 'restore') restore(argv._[1], argv._[2]);
+else if (cmd === 'pull') pull(argv._[1]);
 else if (cmd === 'deploy') deploy(argv._[1]);
 else usage();
