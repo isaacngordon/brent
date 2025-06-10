@@ -119,8 +119,21 @@ Run \`pb-manage dev\` to start development server.
 `);
 }
 
+function ensureDockerRunning() {
+  try {
+    execSync('docker info', { stdio: 'ignore' });
+  } catch (err) {
+    console.error('Docker does not appear to be running. Please start Docker.');
+    process.exit(1);
+  }
+}
+
 function dev() {
-  run('docker-compose up --build');
+  ensureDockerRunning();
+  run('docker-compose up -d --build');
+  migrate();
+  seed();
+  run('docker-compose logs -f');
 }
 
 function migrate() {

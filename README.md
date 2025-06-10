@@ -13,7 +13,7 @@ Global flags:
 Available commands:
 
 - `init` – scaffold config and Docker files
-- `dev` – start the local Docker environment
+- `dev` – start the local Docker environment, run migrations and seeds, and stream logs
 - `migrate` – run migrations in the local container
 - `seed` – seed the local database
 - `create <env>` – create a remote environment (requires `pb.config.json`)
