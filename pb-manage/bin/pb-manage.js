@@ -2,14 +2,24 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const minimist = require('minimist');
+
+const argv = minimist(process.argv.slice(2), {
+  string: ['config', 'ssh-key', 'env'],
+  alias: { c: 'config', k: 'ssh-key', e: 'env' }
+});
 
 function loadConfig() {
-  const cfgPath = path.join(process.cwd(), 'pb.config.json');
+  const cfgPath = argv.config
+    ? path.resolve(argv.config)
+    : path.join(process.cwd(), 'pb.config.json');
   if (!fs.existsSync(cfgPath)) {
     console.error('Missing pb.config.json, run `pb-manage init`');
     process.exit(1);
   }
-  return JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+  const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+  if (argv['ssh-key']) cfg.sshKey = argv['ssh-key'];
+  return cfg;
 }
 
 function run(cmd) {
@@ -18,12 +28,13 @@ function run(cmd) {
 
 function ssh(cmd) {
   const cfg = loadConfig();
-  const key = cfg.sshKey ? `-i ${cfg.sshKey}` : '';
+  const keyPath = argv['ssh-key'] || cfg.sshKey;
+  const key = keyPath ? `-i ${keyPath}` : '';
   run(`ssh ${key} ${cfg.sshUser}@${cfg.vpsHost} '${cmd}'`);
 }
 
 function usage() {
-  console.log('Usage: pb-manage <command> [options]');
+  console.log('Usage: pb-manage [--config path] [--ssh-key key] [--env name] <command> [options]');
   console.log('Commands: init, dev, migrate, seed, create, destroy, backup, restore, deploy');
 }
 
@@ -120,44 +131,44 @@ function seed() {
   run('docker-compose exec pocketbase pocketbase seed up');
 }
 
-function create(env) {
+function create(env = argv.env) {
   if (!env) return console.error('Missing environment name');
   ssh(`mkdir -p ~/pb_data/${env}`);
   ssh(`docker run -d --name pb-${env} -v ~/pb_data/${env}:/pb/pb_data -p 0:8090 pocketbase`);
 }
 
-function destroy(env) {
+function destroy(env = argv.env) {
   if (!env) return console.error('Missing environment name');
   ssh(`docker rm -f pb-${env}`);
   ssh(`rm -rf ~/pb_data/${env}`);
 }
 
-function backup(env) {
+function backup(env = argv.env) {
   if (!env) return console.error('Missing environment name');
   ssh(`zip -r /tmp/${env}-backup.zip ~/pb_data/${env}`);
 }
 
-function restore(env, file) {
+function restore(env = argv.env, file) {
   if (!env || !file) return console.error('Usage: pb-manage restore <env> <file>');
   ssh(`unzip -o ${file} -d ~/pb_data/${env}`);
 }
 
-function deploy(env) {
+function deploy(env = argv.env) {
   if (!env) return console.error('Missing environment name');
   create(env);
   migrate();
   seed();
 }
 
-const cmd = process.argv[2];
+const cmd = argv._[0];
 if (!cmd) return usage();
 if (cmd === 'init') init();
 else if (cmd === 'dev') dev();
 else if (cmd === 'migrate') migrate();
 else if (cmd === 'seed') seed();
-else if (cmd === 'create') create(process.argv[3]);
-else if (cmd === 'destroy') destroy(process.argv[3]);
-else if (cmd === 'backup') backup(process.argv[3]);
-else if (cmd === 'restore') restore(process.argv[3], process.argv[4]);
-else if (cmd === 'deploy') deploy(process.argv[3]);
+else if (cmd === 'create') create(argv._[1]);
+else if (cmd === 'destroy') destroy(argv._[1]);
+else if (cmd === 'backup') backup(argv._[1]);
+else if (cmd === 'restore') restore(argv._[1], argv._[2]);
+else if (cmd === 'deploy') deploy(argv._[1]);
 else usage();
