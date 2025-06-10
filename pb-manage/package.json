@@ -4,5 +4,8 @@
   "bin": {
     "pb-manage": "bin/pb-manage.js"
   },
-  "private": true
+  "private": true,
+  "dependencies": {
+    "minimist": "^1.2.8"
+  }
 }
