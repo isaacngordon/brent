@@ -1,0 +1,8 @@
+{
+  "name": "pb-manage",
+  "version": "0.1.0",
+  "bin": {
+    "pb-manage": "bin/pb-manage.js"
+  },
+  "private": true
+}
