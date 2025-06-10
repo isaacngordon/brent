@@ -22,5 +22,6 @@ Available commands:
   download it and `--remote` to keep a copy on the server.
 - `restore <env> <file>` – stop the remote container, restore the ZIP, and start
   the container again
+- `pull <env>` – fetch a remote backup and restore it locally
 - `deploy <env>` – create and apply migrations & seeds
 
