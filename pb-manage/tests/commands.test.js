@@ -55,6 +55,17 @@ test('init creates config file', () => {
   });
 });
 
+test('init copies template directory', () => {
+  withTempConfig((dir) => {
+    const tpl = path.join(dir, 'tpl');
+    fs.mkdirSync(tpl);
+    fs.writeFileSync(path.join(tpl, 'foo.txt'), 'bar');
+    const { init } = freshModule();
+    init(tpl);
+    assert.ok(fs.existsSync(path.join(dir, 'foo.txt')));
+  });
+});
+
 // migrate
 test('migrate runs docker migrate', () => {
   withExecStub((cmds) => {

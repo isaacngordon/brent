@@ -29,9 +29,10 @@ Global options:
 - `--config <file>` – path to a custom `pb.config.json`
 - `--ssh-key <file>` – SSH key for remote commands
 - `--env <name>` – default environment name
+- `--template <path>` – copy files from this directory or git repo when running `init`
 
 Commands:
-- `init` – scaffold config and Docker files
+- `init` – scaffold config and Docker files. Use `--template <path>` to copy a template instead
 - `dev` – start the local Docker environment, apply migrations and seeds, and stream logs
 - `migrate` – run migrations in the local container
 - `seed` – run seeds in the local container
