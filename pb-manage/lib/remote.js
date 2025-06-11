@@ -56,6 +56,7 @@ function restore(env = argv.env, file) {
   ssh(`docker stop pb-${env} || true`);
   ssh(`unzip -o ${remoteZip} -d ~/pb_data/${env}`);
   ssh(`docker start pb-${env} || docker run -d --name pb-${env} --network pb-net -v ~/pb_data/${env}:/pb/pb_data pocketbase`);
+  ssh(`docker exec pb-${env} pocketbase migrate up`);
   ssh(`rm -f ${remoteZip}`);
 }
 
