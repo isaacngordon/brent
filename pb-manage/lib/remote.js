@@ -1,13 +1,14 @@
-const { argv, ssh, scpFromRemote, scpToRemote, run } = require('./utils');
+const { argv, ssh, scpFromRemote, scpToRemote, run, loadConfig } = require('./utils');
 const { migrate, seed } = require('./local');
 const path = require('path');
 
 function create(env = argv.env) {
   if (!env) return console.error('Missing environment name');
-  const cfg = require('./utils').loadConfig();
+  const cfg = loadConfig();
   ssh(`if [ -d ~/pb_base/pb_data ]; then rm -rf ~/pb_data/${env} && cp -r ~/pb_base/pb_data ~/pb_data/${env}; else mkdir -p ~/pb_data/${env}; fi`);
   ssh('docker network inspect pb-net >/dev/null 2>&1 || docker network create pb-net');
-  ssh(`docker run -d --name pb-${env} --network pb-net -v ~/pb_data/${env}:/pb/pb_data pocketbase`);
+  const image = cfg.image || 'pocketbase';
+  ssh(`docker run -d --name pb-${env} --network pb-net -v ~/pb_data/${env}:/pb/pb_data ${image}`);
   ssh(`docker exec pb-${env} pocketbase migrate up`);
   ssh(`docker exec pb-${env} pocketbase seed up`);
   const domain = cfg.domain;
@@ -55,7 +56,9 @@ function restore(env = argv.env, file) {
 
   ssh(`docker stop pb-${env} || true`);
   ssh(`unzip -o ${remoteZip} -d ~/pb_data/${env}`);
-  ssh(`docker start pb-${env} || docker run -d --name pb-${env} --network pb-net -v ~/pb_data/${env}:/pb/pb_data pocketbase`);
+  const cfg = loadConfig();
+  const image = cfg.image || 'pocketbase';
+  ssh(`docker start pb-${env} || docker run -d --name pb-${env} --network pb-net -v ~/pb_data/${env}:/pb/pb_data ${image}`);
   ssh(`rm -f ${remoteZip}`);
 }
 

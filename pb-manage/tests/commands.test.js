@@ -32,7 +32,8 @@ function withTempConfig(fn) {
   const cfg = {
     vpsHost: 'host',
     sshUser: 'root',
-    domain: 'example.com'
+    domain: 'example.com',
+    image: 'my/image:latest'
   };
   fs.writeFileSync(path.join(dir, 'pb.config.json'), JSON.stringify(cfg));
   const cwd = process.cwd();
@@ -89,6 +90,7 @@ test('create issues ssh commands', () => {
       const { create } = freshModule();
       create('dev');
       assert.ok(cmds.some(c => c.includes('docker run -d --name pb-dev')));
+      assert.ok(cmds.some(c => c.includes('my/image:latest')));
     });
   });
 });
@@ -152,6 +154,7 @@ test('deploy runs create and migrations', () => {
       const { deploy } = freshModule();
       deploy('dev');
       assert.ok(cmds.some(c => c.includes('docker run -d --name pb-dev')));
+      assert.ok(cmds.some(c => c.includes('my/image:latest')));
       assert.ok(cmds.some(c => c.includes('pocketbase migrate up')));
     });
   });

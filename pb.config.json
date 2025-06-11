@@ -1,0 +1,6 @@
+{
+  "vpsHost": "your.vps.host",
+  "sshUser": "root",
+  "domain": "api.example.com",
+  "image": "ghcr.io/your/repo:latest"
+}
