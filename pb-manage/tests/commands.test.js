@@ -32,7 +32,8 @@ function withTempConfig(fn) {
   const cfg = {
     vpsHost: 'host',
     sshUser: 'root',
-    domain: 'example.com'
+    domain: 'example.com',
+    image: 'my/image:latest'
   };
   fs.writeFileSync(path.join(dir, 'pb.config.json'), JSON.stringify(cfg));
   const cwd = process.cwd();
@@ -52,6 +53,17 @@ test('init creates config file', () => {
     const { init } = freshModule();
     init();
     assert.ok(fs.existsSync(path.join(dir, 'pb.config.json')));
+  });
+});
+
+test('init copies template directory', () => {
+  withTempConfig((dir) => {
+    const tpl = path.join(dir, 'tpl');
+    fs.mkdirSync(tpl);
+    fs.writeFileSync(path.join(tpl, 'foo.txt'), 'bar');
+    const { init } = freshModule();
+    init(tpl);
+    assert.ok(fs.existsSync(path.join(dir, 'foo.txt')));
   });
 });
 
@@ -89,6 +101,7 @@ test('create issues ssh commands', () => {
       const { create } = freshModule();
       create('dev');
       assert.ok(cmds.some(c => c.includes('docker run -d --name pb-dev')));
+      assert.ok(cmds.some(c => c.includes('my/image:latest')));
     });
   });
 });
@@ -119,18 +132,20 @@ test('backup pulls backup when local flag set', () => {
 });
 
 // restore
-test('restore uploads and restarts', () => {
-  withTempConfig((dir) => {
-    withExecStub((cmds) => {
-      const file = path.join(dir, 'data.zip');
-      fs.writeFileSync(file, 'dummy');
-      const { restore } = freshModule();
-      restore('dev', file);
-      assert.ok(cmds.some(c => c.startsWith('scp ')));
-      assert.ok(cmds.some(c => c.includes('docker start pb-dev')));
+  test('restore uploads and restarts', () => {
+    withTempConfig((dir) => {
+      withExecStub((cmds) => {
+        const file = path.join(dir, 'data.zip');
+        fs.writeFileSync(file, 'dummy');
+        const { restore } = freshModule();
+        restore('dev', file);
+        assert.ok(cmds.some(c => c.startsWith('scp ')));
+        const startIdx = cmds.findIndex(c => c.includes('docker start pb-dev'));
+        const migrateIdx = cmds.findIndex(c => c.includes('pocketbase migrate up'));
+        assert.ok(startIdx !== -1 && migrateIdx !== -1 && startIdx < migrateIdx);
+      });
     });
   });
-});
 
 // pull
 test('pull grabs remote data', () => {
@@ -152,6 +167,7 @@ test('deploy runs create and migrations', () => {
       const { deploy } = freshModule();
       deploy('dev');
       assert.ok(cmds.some(c => c.includes('docker run -d --name pb-dev')));
+      assert.ok(cmds.some(c => c.includes('my/image:latest')));
       assert.ok(cmds.some(c => c.includes('pocketbase migrate up')));
     });
   });

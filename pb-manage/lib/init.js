@@ -1,6 +1,18 @@
-const { ensureDir, writeFileIfMissing } = require('./utils');
+const fs = require('fs');
+const path = require('path');
+const { ensureDir, writeFileIfMissing, run } = require('./utils');
 
-function init() {
+function init(template) {
+  if (template) {
+    if (/^https?:/.test(template) || template.endsWith('.git')) {
+      run(`git clone ${template} .`);
+    } else {
+      const src = path.resolve(template);
+      fs.cpSync(src, process.cwd(), { recursive: true });
+    }
+    return;
+  }
+
   ensureDir('pb_migrations');
   ensureDir('pb_seeds');
   writeFileIfMissing(
@@ -9,7 +21,8 @@ function init() {
       {
         vpsHost: 'your.vps.host',
         sshUser: 'root',
-        domain: 'api.example.com'
+        domain: 'api.example.com',
+        image: 'ghcr.io/your/repo:latest'
       },
       null,
       2
@@ -80,7 +93,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       REGISTRY: ghcr.io
-      IMAGE: \${{ env.REGISTRY }}/\${{ github.repository }}:latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -92,6 +104,8 @@ jobs:
           registry: \${{ env.REGISTRY }}
           username: \${{ secrets.REGISTRY_USERNAME }}
           password: \${{ secrets.REGISTRY_PASSWORD }}
+      - name: Set image tag
+        run: echo "IMAGE=$(node -p \"require('./pb.config.json').image\")" >> $GITHUB_ENV
       - uses: docker/build-push-action@v5
         with:
           context: .
