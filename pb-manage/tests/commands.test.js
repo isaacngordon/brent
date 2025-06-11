@@ -6,11 +6,14 @@ const path = require('path');
 
 const script = path.resolve(__dirname, '..', 'lib', 'commands.js');
 
-function withExecStub(fn) {
+function withExecStub(fn, responder) {
   const cp = require('child_process');
   const orig = cp.execSync;
   const cmds = [];
-  cp.execSync = (cmd) => { cmds.push(cmd); };
+  cp.execSync = (cmd) => {
+    cmds.push(cmd);
+    if (responder) return responder(cmd);
+  };
   try {
     return fn(cmds);
   } finally {
@@ -83,12 +86,32 @@ test('dev starts containers', () => {
 });
 
 // create
-test('create issues ssh commands', () => {
+test('create creates new container when missing', () => {
   withTempConfig(() => {
     withExecStub((cmds) => {
       const { create } = freshModule();
       create('dev');
+      assert.ok(cmds.some(c => c.includes('cp -r ~/pb_base/pb_data')));
       assert.ok(cmds.some(c => c.includes('docker run -d --name pb-dev')));
+      assert.ok(cmds.some(c => c.includes('/api/health')));
+    }, (cmd) => {
+      if (cmd.includes('docker inspect pb-dev')) {
+        const err = new Error('fail');
+        err.status = 1;
+        throw err;
+      }
+    });
+  });
+});
+
+test('create restarts existing container', () => {
+  withTempConfig(() => {
+    withExecStub((cmds) => {
+      const { create } = freshModule();
+      create('dev');
+      assert.ok(cmds.some(c => c.includes('docker pull pocketbase')));
+      assert.ok(cmds.some(c => c.includes('docker rm -f pb-dev')));
+      assert.ok(cmds.some(c => c.includes('/api/health')));
     });
   });
 });
