@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const script = path.resolve(__dirname, '..', 'bin', 'pb-manage.js');
+const script = path.resolve(__dirname, '..', 'lib', 'commands.js');
 
 function withExecStub(fn) {
   const cp = require('child_process');
@@ -19,7 +19,11 @@ function withExecStub(fn) {
 }
 
 function freshModule() {
-  delete require.cache[require.resolve(script)];
+  const libs = ['commands.js', 'utils.js', 'init.js', 'local.js', 'remote.js'];
+  for (const lib of libs) {
+    const p = path.resolve(__dirname, '..', 'lib', lib);
+    delete require.cache[require.resolve(p)];
+  }
   return require(script);
 }
 
