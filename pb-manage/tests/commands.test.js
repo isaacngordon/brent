@@ -130,18 +130,19 @@ test('backup pulls backup when local flag set', () => {
 });
 
 // restore
-test('restore uploads and restarts', () => {
-  withTempConfig((dir) => {
-    withExecStub((cmds) => {
-      const file = path.join(dir, 'data.zip');
-      fs.writeFileSync(file, 'dummy');
-      const { restore } = freshModule();
-      restore('dev', file);
-      assert.ok(cmds.some(c => c.startsWith('scp ')));
-      assert.ok(cmds.some(c => c.includes('docker start pb-dev')));
+  test('restore uploads and restarts', () => {
+    withTempConfig((dir) => {
+      withExecStub((cmds) => {
+        const file = path.join(dir, 'data.zip');
+        fs.writeFileSync(file, 'dummy');
+        const { restore } = freshModule();
+        restore('dev', file);
+        assert.ok(cmds.some(c => c.startsWith('scp ')));
+        assert.ok(cmds.some(c => c.includes('docker start pb-dev')));
+        assert.ok(cmds.some(c => c.includes('pocketbase migrate up')));
+      });
     });
   });
-});
 
 // pull
 test('pull grabs remote data', () => {
