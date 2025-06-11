@@ -1,6 +1,18 @@
-const { ensureDir, writeFileIfMissing } = require('./utils');
+const fs = require('fs');
+const path = require('path');
+const { ensureDir, writeFileIfMissing, run } = require('./utils');
 
-function init() {
+function init(template) {
+  if (template) {
+    if (/^https?:/.test(template) || template.endsWith('.git')) {
+      run(`git clone ${template} .`);
+    } else {
+      const src = path.resolve(template);
+      fs.cpSync(src, process.cwd(), { recursive: true });
+    }
+    return;
+  }
+
   ensureDir('pb_migrations');
   ensureDir('pb_seeds');
   writeFileIfMissing(

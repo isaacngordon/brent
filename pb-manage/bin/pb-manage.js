@@ -3,14 +3,14 @@ const commands = require('../lib/commands');
 const { argv, init, dev, migrate, seed, create, destroy, backup, restore, pull, deploy } = commands;
 
 function usage() {
-  console.log('Usage: pb-manage [--config path] [--ssh-key key] [--env name] <command> [options]');
+  console.log('Usage: pb-manage [--config path] [--ssh-key key] [--env name] [--template path] <command> [options]');
   console.log('Commands: init, dev, migrate, seed, create, destroy, backup, restore, pull, deploy');
 }
 
 if (require.main === module) {
   const cmd = argv._[0];
   if (!cmd) return usage();
-  if (cmd === 'init') init();
+  if (cmd === 'init') init(argv.template);
   else if (cmd === 'dev') dev();
   else if (cmd === 'migrate') migrate();
   else if (cmd === 'seed') seed();

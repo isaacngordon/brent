@@ -27,6 +27,21 @@ test('init creates project files', () => {
   }
 });
 
+test('init copies template files', () => {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'pbtest-'));
+  const template = path.join(base, 'tpl');
+  fs.mkdirSync(template);
+  fs.writeFileSync(path.join(template, 'example.txt'), 'hi');
+  const proj = path.join(base, 'proj');
+  fs.mkdirSync(proj);
+  const res = spawnSync('node', [bin, '--template', template, 'init'], {
+    cwd: proj,
+    encoding: 'utf8'
+  });
+  assert.strictEqual(res.status, 0);
+  assert.ok(fs.existsSync(path.join(proj, 'example.txt')));
+});
+
 test('create without env prints error', () => {
   const res = spawnSync('node', [bin, 'create'], { encoding: 'utf8' });
   assert.match(res.stderr, /Missing environment name/);
