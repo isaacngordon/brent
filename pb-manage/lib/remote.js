@@ -5,13 +5,24 @@ const path = require('path');
 function create(env = argv.env) {
   if (!env) return console.error('Missing environment name');
   const cfg = require('./utils').loadConfig();
-  ssh(`if [ -d ~/pb_base/pb_data ]; then rm -rf ~/pb_data/${env} && cp -r ~/pb_base/pb_data ~/pb_data/${env}; else mkdir -p ~/pb_data/${env}; fi`);
-  ssh('docker network inspect pb-net >/dev/null 2>&1 || docker network create pb-net');
-  ssh(`docker run -d --name pb-${env} --network pb-net -v ~/pb_data/${env}:/pb/pb_data pocketbase`);
-  ssh(`docker exec pb-${env} pocketbase migrate up`);
-  ssh(`docker exec pb-${env} pocketbase seed up`);
-  const domain = cfg.domain;
-  ssh(`cat <<'EOF' > /etc/nginx/conf.d/pb-${env}.conf
+
+  let exists = true;
+  try {
+    ssh(`docker inspect pb-${env} >/dev/null 2>&1`);
+  } catch (err) {
+    exists = false;
+  }
+
+  if (exists) {
+    ssh('docker pull pocketbase');
+    ssh(`docker rm -f pb-${env}`);
+    ssh(`docker run -d --name pb-${env} --network pb-net -v ~/pb_data/${env}:/pb/pb_data pocketbase`);
+  } else {
+    ssh(`if [ -d ~/pb_base/pb_data ]; then rm -rf ~/pb_data/${env} && cp -r ~/pb_base/pb_data ~/pb_data/${env}; else mkdir -p ~/pb_data/${env}; fi`);
+    ssh('docker network inspect pb-net >/dev/null 2>&1 || docker network create pb-net');
+    ssh(`docker run -d --name pb-${env} --network pb-net -v ~/pb_data/${env}:/pb/pb_data pocketbase`);
+    const domain = cfg.domain;
+    ssh(`cat <<'EOF' > /etc/nginx/conf.d/pb-${env}.conf
 server {
     listen 80;
     server_name ${env}.${domain};
@@ -23,7 +34,12 @@ server {
     }
 }
 EOF`);
-  ssh('nginx -s reload');
+    ssh('nginx -s reload');
+  }
+
+  ssh(`docker exec pb-${env} pocketbase migrate up`);
+  ssh(`docker exec pb-${env} pocketbase seed up`);
+  ssh(`curl -sf http://pb-${env}:8090/api/health >/dev/null`);
 }
 
 function destroy(env = argv.env) {
