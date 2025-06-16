@@ -59,7 +59,7 @@ function restore(env = argv.env, file) {
   const cfg = loadConfig();
   const image = cfg.image || 'pocketbase';
   ssh(`docker start pb-${env} || docker run -d --name pb-${env} --network pb-net -v ~/pb_data/${env}:/pb/pb_data ${image}`);
-  ssh(`rm -f ${remoteZip}`);
+  ssh(`docker exec pb-${env} pocketbase migrate up`);
 }
 
 function deploy(env = argv.env) {
