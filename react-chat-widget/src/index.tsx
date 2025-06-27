@@ -1,5 +1,11 @@
-// src/index.ts
+import React from 'react';
+import ReactDOM from 'react-dom';
 import ChatWidget from './ChatWidget';
 
-export default ChatWidget;
+ReactDOM.render(
+  <React.StrictMode>
+    <ChatWidget />
+  </React.StrictMode>,
+  document.getElementById('root')
+);
 
