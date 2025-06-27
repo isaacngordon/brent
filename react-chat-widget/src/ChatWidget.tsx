@@ -12,6 +12,7 @@ const ChatWidget: React.FC = () => {
 
   return (
     <div className={`chat-widget ${isOpen ? 'open' : ''}`}>
+      <p>Hey, do you see the button?</p>
       <button className="chat-toggle-button" onClick={toggleChat}>
         Click Me
       </button>
