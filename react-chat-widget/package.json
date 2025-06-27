@@ -6,6 +6,8 @@
   "types": "/dist/index.d.js",
   "scripts": {
     "build": "tsc && npm run copy-css",
+    "serve": "npm run build && npx serve dist",
+    "watch": "tsc --watch",
     "copy-css": "cp src/ChatWidget.css dist/ChatWidget.css"
   },
   "keywords": [],
