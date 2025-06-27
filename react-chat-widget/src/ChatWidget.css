@@ -3,6 +3,7 @@
   bottom: 20px;
   right: 20px;
   z-index: 1000;
+  font-family: Arial, sans-serif;
 }
 
 .chat-toggle-button {
@@ -10,21 +11,54 @@
   background-color: #007bff;
   color: white;
   border: none;
-  padding: 10px 20px;
+  padding: 12px 24px;
   cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.chat-toggle-button:hover {
+  background-color: #0056b3;
 }
 
 .chat-window {
   position: absolute;
-  bottom: 50px;
+  bottom: 60px;
   right: 0;
-  width: 300px;
-  height: 400px;
-  background-color: white;
-  border: 1px solid #ccc;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 320px;
+  height: 450px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   padding: 20px;
-  border-radius: 10px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.chat-header {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.chat-messages {
+  height: 300px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+  padding-right: 10px;
+}
+
+.chat-input {
+  width: calc(100% - 20px);
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.chat-input:focus {
+  border-color: #007bff;
 }
 
 .open .chat-toggle-button {
